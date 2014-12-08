@@ -42,7 +42,7 @@ SCENE SETUP (Board, Player and Lighting)
 
 The first GameObject we create is a plane, which acts as our game board. on which the ball will roll. For convenience, we set the position of the plane the origin 0/0/0 (X/Y/Z) which puts it in the absolute center of the scene. Planes can be scaled by length and width in terms of "unity units", but have no height. They are also one-sided, and we can reverse the facing side by setting height to a negative number.
 
-Now we create another game object, a sphere representing our player. The sphere is a "primitive object," meaning it is indivisible. In unity, primiitive objects are 1x1x1, and the sphere defaults to be halfway through our ground plane. We move it up the Y-axis by half a unit to make it sit on the ground.
+Now we create another game object, a sphere representing our player. The sphere is a "primitive object," meaning it is built-in to Unity and thus we don't need to define it. In unity, primiitive objects are 1x1x1, and the sphere defaults to be halfway through our ground plane. We move it up the Y-axis by half a unit to make it sit on the ground.
 
 Next we create a main light at 30/60/0 with shadows enabled so that we get a light shining from above and one side and causing the ball to case a shadow. We then add a fill light with a bit of colour, a lower intensity and rotation -30/-60/0 (ie 330/300/0) so that the ball has a bit of light case from below, separating it from its shadow. The combination of these two lights make the ball easier to see against the ground.
 
@@ -50,5 +50,20 @@ We can create an empty GameObject to hold both lights. This creates a Parent/Chi
 
 
 
+MOVING THE PLAYER
+
+We want the Player GameObject to behave like a solid object with physics. First, we have to attach a "Rigidbody Component" to Player.
+
+Next, we want to allow player input to control the sphere. We will do this by attaching a script. We want this script to act as a component of Player, and we can shortcut setting up this script by first selecting Player and then pressing "Add Component -> New Script" in the Inspector view. This creates the script file at the top level of our Assets folder, so we'll have to move it to the place we want it to be.
+
+Within the script, we want to 
+
+cut off at "Moving the Player", 4:25
 
 
+
+
+
+
+
+After this tutorial, I should go back to the key terms ("rigidbody" and check the related text tutorials to get thorough definitions of these terms.)
