@@ -56,14 +56,36 @@ We want the Player GameObject to behave like a solid object with physics. First,
 
 Next, we want to allow player input to control the sphere. We will do this by attaching a script. We want this script to act as a component of Player, and we can shortcut setting up this script by first selecting Player and then pressing "Add Component -> New Script" in the Inspector view. This creates the script file at the top level of our Assets folder, so we'll have to move it to the place we want it to be.
 
-Within the script, we want to 
+Unity comes attached to a coding environment "MonoDevelop"
 
-cut off at "Moving the Player", 4:25
+Within the script, we want to check for player input on every frame, and then apply movement on every frame in response. Unity calls "Update()" every frame. "fixedUpdate()" is called just before performing physics calculations, but physics calculations don't necessarily occur every frame. We want to deal with the player's rigidbody movement which is physics, so we'll put that in fixedUpdate().
+
+We need to use the Input class. 
+
+"Ctrl '" searches the unity documentation for the highlighted text... in this case the Input class.
+
+The API tells us that movement should be read through Input.GetAxis which can be mapped to a keyboard, mouse, etc in the "Input Manager" section of "Project Details" in Unity. This function returns movement as a float on the axes "Horizontal" and "Vertical".
+
+Now we use the "AddForce" method for our RigidBody object. This takes a Vector3 (ie a set of three floats) representing the force to add on the x, y and z axes. We want to move on the x and z axes, so we use x = Input.GetAxis("horizontal"), y = 0, z = InputGetAxis("vertical").
+
+
+Because forces are being read/applied every frame, the result of some amount of input will depend on the user's framerate. That's bad. We can eliminate this by using "Time.deltaTime" as a coefficient when we add forces. This method returns the the time since the last frame update, meaning it will be bigger for low framerates and offset the lower number of force applications.
+
+
+Global parameters created in a script which is attached to a GameObject will be modifiable from the inspector view of that GameObject. This is really handy for tuning physics variables, such as  "speed" coefficient for the Player sphere.
 
 
 
+CAMERA
+
+We want to make the camera follow the player sphere and rotate with it, in a typical third-person perspective. We could simply make the camera a child of the sphere in the object hierarchy. However because the player is a sphere which is rolling according to physics, the camera rolls with the sphere becoming extremely disorienting.
+
+Instead, we will keep the camera independent of the sphere and use a script to make the camera follow the sphere's position. We need a public GameObject variable to set to the player sphere, and a private Vector3 offset to determine how far the camera sits from the sphere. First we will store the camera's starting transform into offset (in the "Start()" function), and then we will update that transform according to the player's position after every frame.
+
+Inside the script, we can access the position of the camera's transform using "transform.position," and if we store the player GameObject in a variable "player", then we can access its position in "player.transform.position"
+
+The above code should be placed in "LateUpdate()" which ensures our camera position is updated AFTER the physics engine has determined the sphere's new position. There are probably a lot of good reasons for this, but I can only speculate.
 
 
+LEVEL DESIGN & PICKUPS
 
-
-After this tutorial, I should go back to the key terms ("rigidbody" and check the related text tutorials to get thorough definitions of these terms.)
