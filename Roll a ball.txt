@@ -89,3 +89,55 @@ The above code should be placed in "LateUpdate()" which ensures our camera posit
 
 LEVEL DESIGN & PICKUPS
 
+We'll put walls around the edge of the game board to keep the sphere from falling off. We create an empty Walls GameObject, then create a child cube representing one wall, then scale the cube to match the size of the board. Duplicate and rotate for the other three walls.
+
+Now for pickups. We create a cube named "PickUp" at origin, and notice that the player sphere is blocking our view. We can set the player sphere to "inactive" for this scene, which removes it from view. 
+
+Now to make the pickups "enticing" for players, we want to do a few things. Make it small, make it hover above the board, put it on an angle, and make it rotate. The first three are easy, but rotation will require a script. This is fairly simple, we can just use "transform.Rotate(new Vector3 (x, y, z) * Time.deltaTime)" in the regular Update() function to rotate the object by x, y and z every frame while accounting for differences in framerate.
+
+There should be multiple pickups, so we want to make our single PickUp object into a "prefab" which can be reused in multiple scenes and modified from a single location. We create a new "prefabs" folder in assets and drag the PickUp object into that folder. 
+
+Lastly, create a an empty "PickUps" parent, place our single PickUp under it, and start duplicating.
+
+
+COLLECTING AND COUNTING PICKUPS
+
+The sphere, walls and pickups all have "collider" components which tell us about their collisions with eachother. We will use "void Collider.OnTriggerEnter(Collider other){}" to perform some action when the player object touches some other object.
+
+First, we need to identify PickUp objects with a "tag." We can do this for all PickUp objects simultaneously by selecting the prefab in the assets folder, then clicking through the Inspector window -> Tag dropdown and adding a tag with whatever name we want.
+
+Now over in the PlayerController script, we can test if "other" is a pickup, and if it is then we can deactivate the PickUp. The first part is done with "other.gameObject.tag", and the second is done with "other.gameObject.SetActive(false)." 
+
+So at this point we test... and it doesn't work! When the sphere hits a PickUp, the PickUp dosn't deactivate. Why not? Right now, Unity's physics engine is not allowing the sphere object to "enter" the pickups, because they are both solid objects. Thus our method "onTriggerEnter" is never called. We need to change the collision type of our PickUp objects to "trigger" by checking the Is Trigger checkbox in the pickups' Box Collider component. Alternately, we could use the method "OnCollisionEnter(Collision col)" but then we would have to go a roundabout way to finding out which object our player collided with.
+
+Now, remember how we added a RigidBody component to the player sphere? In addition to giving the sphere physics for movement, it tells Unity to treat the sphere as a "dynamic" object, meaning it can move and thus its collision box needs to be recalculated constantly. On the other hand, our PickUp objects are currently static, meaning their collision boxes don't get recalculated. This is bad, because when our PickUps rotate, their collision box doesn't rotate with them. So we need to make the PickUps dynamic, by adding the RigidBody component. 
+
+To let the RigidBody PickUps float, we COULD simply uncheck the "Use Gravity" checkbox, but then the PickUps would fall through the floor because their "trigger" status means they do not collide with other objects. Instead, we should check "Is Kinematic," which prevents the object from being affected by physics forces (ie, gravity) while still allowing the object to be moved and animated via their Transform (ie, rotation).
+
+
+DISPLAYING TEXT
+
+Now we want to count PickUps collected, display the number, and end the game.
+
+Counting is quote easy, we add a private "count" variable to PlayerController, intialize it to 0 during the Start() function, and then increment it during Update() during the PickUp collision resolution.
+
+Now to display the count. The tutorial says to use a "GUI Text" GameObject but this has been deprecated, so I'm going to have to wing it from here:
+
+Unity currently implements a UI system with a "Canvas" object as a container for several smaller UI objects (text, images, etc). We want to display a piece of text, so we'll need to create a Canvas GameObject and then a child Text GameObject (which I named CounterText). I then reset the Canvas transform to 0 and set the CounterText's "anchor" values to the top-left corner (which is responsive to changes in screen size). From there I game the text a small transform to ensure there is always a gap between the text and the edge of the screen.
+
+Hooking up the text to player's counter meant modifying the PlayerController script. I added a public Unity.UI.Text variable named PickUpUI which I then set to CounterText in the Unity GameObject inspector. To control the text being displayed, I added "PickUpUI.Text = counter" to the Update() function. I could've also placed this in FixedUpdate() to only run when a new pickup occurs, but then I would need to duplicate my UI-updating code if I ever want other factors to modify counter (ie, make it a "score" which decreases over time). The benefit of reducing the number of UI updates is probably trivial by comparison. An added benefit is that now the UI will update itself on the first frame to read "0".
+
+Last, we want to display some text when all PickUps have been picked up, telling the player they won. I created another Text GameObject under Canvas, added another Unity.UI.Text variable to the PlayerController script, and added an if-statement to Update() checking if count is greater than the hardcoded number of pickups in my game (7). If yes, set WinText.text = "YOU WIN!". The count-to-win could probably be made dynamic by adding a reference to the PickUps parent and checking something like "PickUps.numberOfChildren" but the tutorial doesn't do that and I don't want to get too far out of sync.
+
+
+DEPLOYMENT
+
+So now we have a finished-ish game, and we want to deploy it to users.. specifically to the unity Web Player. First go into File -> Build Settings and set the target Platform to "Web Player". Then we drag the scene we want from the Assets view into the build window.
+
+Note that we could build without specifying any scenes, in which case Unity would only build the scene we currently have open for editing.
+
+Now hit Build, choose a folder to put our build in, and finish.
+
+Since we chose to build to a "Web Player," unity produces two files: A .unity3d file containing the game's data, and an HTML file through which we can actually play the game. Note that this HTML file can be modified, and unity can be given custom templates to generate a custom HTML file automatically.
+
+Done!
