@@ -33,7 +33,6 @@ Lastly, we'll add the prefab "engines_player" Particle System gameobject as a ch
 
 
 
-
 CAMERA AND LIGHTS
 
 By default, Unity places the camera on the origin "behind" the origin, on the same horizontal plane. We want the camera to be aboe the ship looking own, so we'll reset its postion to origin, add some y-axis transform, and rotate it about the X-axis. 
@@ -47,8 +46,18 @@ We'll create three lights: main, fill and rim. We want the main light to emulate
 
 ADDING A BACKGROUND
 
+Currently the background for our game is flat black, which we want to replace with something more interesting. First, we will create a "Quad" gameobject which will hold our background. This is essentially a single-sided square formed by two triangles (whereas a "Plane" may be made of many more triangles... don't ask me why.). We'll move our quad to the origin and rotate it about the X-axis, so that it can be seen from above. We won't need this quad to be a collider so we can remove that default component.
+
+To make the Quad interesting to look at, we will need to apply a texture. Some textures are included in the premade assets for this project, and the one we want is "tile_nebula_green_dff." For unity to apply a texture, it must make a "material" out of that texture, and then use that material in the Mesh Renderer component of the quad. Simply dragging an image from the Assets view onto the quad in the Scene view will do all of this automatically. 
+
+By default, the entire image will be resized to fit on the quad, which can make it look squashed if the image has a different shape than the quad. To fix that, we should scale up the quad until it fills our game-view and fits the proportions of the image. We can see that the image we are using has a resolution of 1024x2048, so whatever scale we apply to the quad should follow that 1:2 ratio in order to keep the image undistorted. Use whatever scale makes the image fill your game view, which for me was 16x32.
+
+Next, we want to make the background a bit brighter. By default Unity applies the "diffuse" shader, which is matte rather than glossy. The directional lights in our scene shine onto the background at a very shallow angles, and this combined with the matte shader mean the background is very dark. We don't want to change the existing lights as they already suit our ship, and it would be wasteful to add new unique lights on a separate layer just to hit this one quad. It is most efficient to just change the material shader being used for the background image. For this image, we really don't want or need any special lighting, we just want the image to appear exactly as it was created: change the shader from Diffuse to Unlit->Texture.
+
+Lastly, notice that the player ship is currently buried halfway through the background quad, because both of them are at origin. We'll move the background quad down the Y-axis a few units to get it out of the way. Thanks to our orthographic camera, the Y-axis position of the ship and background will not affect how they look to the player.
 
 
+MOVING THE PLAYER
 
 
 
