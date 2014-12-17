@@ -21,12 +21,36 @@ Drag our player-ship GameObject from the Assets->Models view into the Hierarchy.
 
 Currently the player ship only has a few components - a Transform which controls its position and orientation, a Mesh and Mesh Renderer determining its shape and lighting, and a pair of shaders determining the appearance of that shape's "skin." 
 
-We want our ship to be collidable, so we'll attach a Rigidbody component. We don't want the ship to fall according to gravity, so we'll deselect "Use Gravity."
+We want our ship to be movable and collidable according to physics, so we'll attach a Rigidbody component. We don't want the ship to fall according to gravity, so we'll deselect "Use Gravity." 
 
-----
+Unlike in Roll-a-ball, where the player phere was a "primitive" which Unity intrinsicaly understood, Unity does not know how to handle collisions with our custom-made player ship. We need to tell Unity the shape of our ship by manually attaching a "collider" component. Specifically a "capsule collider" which is basically a cylinder with a sphere at either end. We can resize the spheres and pull them apart to fit nicely around our ship.
 
-At this point my internet dropped, so I'll wing it from here. I'm sure I'll need to set up player controls similar to those in Roll-a-ball. 
+Capsule is one of several "primitive" colliders which Unity understands, but of course it wo't perfectly fit every object. Another option would be a "composite collider" which is a set of several primitive colliders all attached to the same object in slightly different positions. A third option is the "mesh collider" which detects collisions precicely according to the object's mesh. This is very performance-intensive, but can be improved by simplifying the mesh. The mesh collider and mesh renderer are allowed to used different meshes.
 
-So, I'll create a Scripts folder in Assets, and in my PlayerShip gameobject I'll add a new script component -> PlayerController.cs.
+Colllisions in this game only need to trigger events, not bounce the ship off other objects, so we'll set the mesh collider to be a trigger collider.
 
-First, I want to get the ship moving under player control, meaning I need to read input from WASD similar to Roll-a-ball. Unfortunately, I can't get into the Unity API reference without itnernet access, so I can't really find any new code to write.
+Lastly, we'll add the prefab "engines_player" Particle System gameobject as a child of our player object. The transform of a child object is always relative to the parent's transform, so the engine flare will stay attached to our ship exactly as we want.
+
+
+
+
+CAMERA AND LIGHTS
+
+By default, Unity places the camera on the origin "behind" the origin, on the same horizontal plane. We want the camera to be aboe the ship looking own, so we'll reset its postion to origin, add some y-axis transform, and rotate it about the X-axis. 
+
+There are two subtly-different options for camera projection, "orthographic" and "perspective". Perspective simulates the human eye, seeing everything within a certain angle from a single point. Orthographic does not use a field-of-view, rather it displays everything "as is" within a square whose size we can control. If perspective is an infinitely-long cone, orthographic is an infinitely-long cube. For this project we'll be using orthographic style, to emulate the arcade space shooters of yore. Tune the camera's orthographic size and transform until it feels right. I increased the size (effectively zooming out) and moved the camera ahead of the ship).
+
+As part of the camera gameobject, we can set the background of the scene. For now, set it to solid black. Notice how we can still see the ship even on a black background with no lights? This is due to the default "ambient lighting" feture under Edit -> Render Settings. By default this is a dark grey, which gives a dim undirectional light to every object in the scene. We can hide this light by setting it to solid black.
+
+We'll create three lights: main, fill and rim. We want the main light to emulate a sun, so we'll rotate it about the x and y axes to shine on the ship from one side, slightly above and ahead. Set the color to white and increate the intensity, to emulate a sun. The fill light should show the opposite side of the ship, so we'll give it an opposite rotation on the y-axis. We want this light to be subtle, so we'll cut its intensity and change it from white to a light blue.  Now we have two lights above and in front of the ship, so we want a rim light behind and below the ship to balance it out. Again, this should be subtle so cut its intensity even further and use a light blue color. Lastly, we'll organize our lights by making them children of an empty gameobject, resetting the transform and moving it out of the way. Moving the parent gameobject will not affect the look of our lighting, because "directional" lights light the entire scene based only on rotation.
+
+
+ADDING A BACKGROUND
+
+
+
+
+
+
+
+
