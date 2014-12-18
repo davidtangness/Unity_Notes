@@ -128,4 +128,37 @@ Finally, we'll add some tilt when the ship moves on the X-axis, as if the ship w
 "Quaternion" is Unity's internal method of storing and processing angles, and uses four values (X, Y, Z and W) and which I cannot intuitively picture in my head. "Euler" translates that angle into the more comfortable Euler format (X, Y, and Z) which is what we normally use in Unity's Inspector view. Euler format suffers some issues ("Gimbal Lock") when used continuously to calculate changes in angle, which is why Unity converts back to Quaternion for its own processing... but the full explanation requires some hardcore math which I cannot deal with at this time of night. Anyways, we specify a Euler angle with no rotation on the X and Y axes, and rotate about the Z axis according to the direction our ship is moving. Back in the Inspector I set tilt = 4, and in testing it looks good.
 
 
+CREATING SHOTS
 
+Our player ship needs to be able to shoot at enemies, so have to create shots.
+
+We'll start with an empty gameobject named "Bolt" which will be the parent for both the logical and visual portions of our shots. This way, we can reuse the logic for different types of weapons while replacing the visuals.
+
+Next we'll create the visual portion, by creating a Quad as a child of Bolt, and rotating that quad about the X-axis so that it faces up towards the camera. Then we need to apply a texture to the quad, but we do not want to let Unity create a default material for the texture this time. 
+
+We'll create a new material in the Materials folder, by right-clicking in the assets view and selecting Create->Material. Then with the new material open in the Inspector view, we'll drag the texture fx_lazer_orange from the Textures directory onto the texture slot of the material in the Inspector. Now simply drag our material onto the VFX quad which we created earlier. 
+
+In the game view, our shot looks like a bright bolt on a flat black square, which is not what we want. We want the black to become transparent. We can achieve this by switching the VFX mesh renderer's shader from "Diffuse" to "Particles->Additive". When the additive shader is used, Black is left out of the scene and White is strengthened, and then all other colors are added on top. This will get rid of the black square and make our bolt stand out very clearly. Note, "Mobile" shaders are generally more efficient but may lose some customization or visual quality. But for our game, the mobile additive shader looks fine.
+
+Now for movement and collision. First we'll add a RigidBody component and deselect gravity, because we don't want the shot to fall through the background. Next, in the VFX quad, notice how a Mesh Collider is already present. Quads are created by default with a mesh collider, but we don't want one here. The quad is much larger than the actual shot that we want, so using a mesh collider on the quad would lead to collisions even when the shot appears to miss. So we'll remove the Mesh Collider component from VFX.
+
+So the collider we really want is a Capsule Collider, scaled to the size and shape of our bolt. We'll add this component to the Bolt gameobject, then rotate and and scale it by eye. I set it to run along the Z-Axis, with radius 0.035 and height 0.55.
+
+Finally we need to create our logic, in a script component. For now, we just want our bolt to move forward as soon as it is fired... meaning as soon as a copy of Bolt is created. We can achieve this by simply setting the RigidBody's velocity to "transform.forward" in the Start() function. Transform.forward will move the object along its local Z-axis without moving on X or Y, and that is exactly what we want. To let us tune the speed of the bolt, we add a public "speed" variable and multiply the velocity by it.
+
+	public float speed;
+
+	...
+
+	void Start () {
+		rigidbody.velocity = transform.forward * speed;
+	}
+
+Test it and choose a comfortable speed value, I went with 15. Note that because we are setting the velocity directly rather than imparting a physical force, the player's framerate will not affect the movement of the bolt... meaning we don't need to multiply by Time.deltaTime.
+
+We will want to make many copies of Bolt eventually, so well save it as a Prefab by dragging "Bolt" into the Prefabs folder in the assets view. And we only want a bolt to be created when the player fires, so we should delete the original bolt from the scene.
+
+A cool trick to test our Bolts even without any firing code is to launch the game, and then drag the Bolt prefab into the hierarchy view. This will create temporary instances of Bolt within our game, which disappear from the hierarchy when we stop playing.
+
+
+SHOOTING SHOTS
