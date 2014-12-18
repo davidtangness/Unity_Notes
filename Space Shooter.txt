@@ -59,7 +59,73 @@ Lastly, notice that the player ship is currently buried halfway through the back
 
 MOVING THE PLAYER
 
+To get our player ship moving, we need to attach a script to the Player gameobject much like we did for Roll-a-ball. Select the Player gameobject, click "Add Component" -> "New Script", and make it a C# script called "PlayerController". We'll edit the script in Unity's MonoDevelop environment, by double-clicking on the script.
 
+Now, we want the player to move according to physics, much like we did with Roll-a-ball. When the player presses a key left or right, a force should push the ship left or right. These actions should be performed whenever Unity's physics engine updates, so we will place these actions in the "FixedUpdate()" function.
+
+The following code snippet will give us the results of whatever input method is set up in Unity's input manager. By default, inputs are mapped to the WASD keys.
+
+		float moveHorizontal = Input.GetAxis ("Horizontal");
+		float moveVertical = Input.GetAxis ("Vertical");
+
+The next code snippet maps those inputs to a Vector3 object which can be understood by our Player gameobject's RigidBody component. We put 0.0f in the y-axis because we do not want the ship to move on that axis.
+
+		Vector3 movement = new Vector3 (moveHorizontal, 0.0f, moveVertical);
+		rigidbody.velocity = movement;
+
+
+Back in Unity, we can press play and see that our ship moves.. albeit slowly. We want to control the speed of our ship, so we'll go back to the script and add a public global variable named "speed." SInce this is a public variable, we will be able to set its value in the Inspector view in Unity. Now we need to apply speed to our ship's movement.
+
+		rigidbody.velocity = movement * speed;
+
+One quick note: unlike in Roll-a-ball we do not need to multiply by Time.deltaTime to remove the factor of the player's framerate. In Space Shooter, we are directly setting the player ship's velocity rather than imparting a force. If a user holds down their "A" key for a full second at 10 FPS versus 60 FPS, we'll simply be re-setting the velocity to the same value 10 or 60 times during that second... which has no effect regardless of frequency. In Roll-a-ball, we applied physical forces rather than directly setting a velocity, and so every repeated application of force would further increase the object's speed. One second with 60 pushes per second would move the object much faster than 10 pushes per second, unless we balance the size of each push by using Time.deltaTime.
+
+
+Testing again, we notice that our ship is able to move off the edges of the screen, because we never constrained it. Back in our script, we'll declare four more public global variables: xMin, xMax, zMin and zMax, which will represent the edges of the player's movement space. In our FixedUpdate() function, once we've determined where the player wants to move we need to ensure that the ships actual position does not go beyond those boundaries. We can do so with the following code snippet:
+
+		rigidbody.position = new Vector3 
+		(
+			Mathf.Clamp(rigidbody.position.x, xMin, xMax), 
+			0.0f, 
+			Mathf.Clamp(rigidbody.position.z, zMin, zMax)
+		);
+
+The Mathf.Clamp function above takes a number, a minimum and a maximum. If the number is between minimum and maximum, the number is returned. If the number is above max, max is return and if below min, min is returned. 
+
+So now we can restrict the movement of our player ship, great. However, eventually we will want to apply those same restrictions to other objects, and in Unity's Inspect view those four public variables are taking up a lot of space. To make this code reusable and get it out of the way, we'll put these variables into their own "Boundary" class, create an instance of Boundary in the PlayerController class, and reference those variables through the instance.
+
+	public class Boundary {
+		public float xMin, xMax, zMin, zMax;
+	}
+
+	...
+
+	public Boundary boundary;
+
+	...
+
+	rigidbody.position = new Vector3 
+			(
+				Mathf.Clamp(rigidbody.position.x, boundary.xMin, boundary.xMax), 
+				0.0f, 
+				Mathf.Clamp(rigidbody.position.z, boundary.zMin, boundary.zMax)
+			);
+
+Now, when we switch back to the Unity inspector, we cannot see the Boundary class or its public variables, meaning we cannot set them. We cannot see them because the Boundary class is not serialized... meaning the data from that class is not given to the Inspector. The default PlayerController class inherits its own serialized stats from MonoBehaviour, but for our custom Boundary class we must add that status manually, like so:
+
+	[System.Serializable]
+	public class Boundary {
+		...
+
+
+Returning to the Unity inspector, we see a "Boundary" tab in the Player Controller component, which we can expand to find XMin, XMax, ZMin and ZMax. As for their values, I went with -6, 6, -4 and 8. Testing the game shows that the ship now stops at those boundaries.
+
+
+Finally, we'll add some tilt when the ship moves on the X-axis, as if the ship were banking. In the PlayerController script, we'll add a public tile variable, and a new snipped to the end of FixedUpdate()
+
+	rigidbody.rotation = Quaternion.Euler (0.0f, 0.0f, rigidbody.velocity.x * -tilt);
+
+"Quaternion" is Unity's internal method of storing and processing angles, and uses four values (X, Y, Z and W) and which I cannot intuitively picture in my head. "Euler" translates that angle into the more comfortable Euler format (X, Y, and Z) which is what we normally use in Unity's Inspector view. Euler format suffers some issues ("Gimbal Lock") when used continuously to calculate changes in angle, which is why Unity converts back to Quaternion for its own processing... but the full explanation requires some hardcore math which I cannot deal with at this time of night. Anyways, we specify a Euler angle with no rotation on the X and Y axes, and rotate about the Z axis according to the direction our ship is moving. Back in the Inspector I set tilt = 4, and in testing it looks good.
 
 
 
