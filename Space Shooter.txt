@@ -162,3 +162,36 @@ A cool trick to test our Bolts even without any firing code is to launch the gam
 
 
 SHOOTING SHOTS
+
+We want our player to be able to shoot copies of the Bolt prefab, and to make this happen we'll need to modify our PlayerController script. We need to be watching for player input on every frame, so we'll use the "Update()" function which is called just before Unity draws a new frame, every frame.
+
+We need to "Instantiate" a Bolt gameobject, and we'll use the Object.Instantiate(object, position, rotation) function. We know what object we want to create, but how do we determine a position and rotation?
+
+We'll create a new empty gameobject named "Shot Spawn" and make it a child of the Player gameobject. We can then move Shot Spawn around relative to the player ship (ie, move it to the front of the ship), and then when the ship moves the Shot Spawn will move with it. I used position (0, -0.05, 1). Then we add public variables to our script, drag the Bolt prefab and Shot Spawn object into those variables in the Inspector, and add our logic.
+
+	public GameObject shot;
+	public Transform shotSpawn;
+
+	void Update() {
+			Instantiate (shot, shotSpawn.position, shotSpawn.rotation);
+	}
+
+At this point, playing the game would spawn a new shot every single frame. We want to check for player input every frame, but only spawn a shot if the player has pressed the appropriate key. Here's our updated code:
+
+	public float fireRate;
+	private float nextFire;
+
+	void Update() {
+		if (Input.GetButton ("Fire1") && Time.time > nextFire) {
+			nextFire = Time.time + fireRate;
+			Instantiate (shot, shotSpawn.position, shotSpawn.rotation);
+		}
+	}
+
+This code does two things. It checks if the user has pressed the "Fire1" key as defined in Unity's input manager, and it checks if "fireRate" time has passed since the last shot was fired. This way, holding down the fire key will fire at a limited rate, rather than fire a new shot every frame. fireRate is public so that we can tune it from the Inspector view. 
+
+So, set a fire rate value, check the input manager to determine your fire key (default "Fire1" is left crtl) and try it out. Notice that as we play, the hierarchy view fills with clones of the "Bolt" gameobject because we do not despawn shots when they leave the play area.
+
+
+BOUNDARY
+
