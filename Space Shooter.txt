@@ -195,3 +195,98 @@ So, set a fire rate value, check the input manager to determine your fire key (d
 
 BOUNDARY
 
+Previously we created a boundary to sop our ship from moving outside of our scene. But for shots (and eventually hazards) we want destroy them rather than stop this.
+
+First, create a Cube gameobject, which we will modify to act as our bounding box. We don't want this box to physically collide with objects but to simply trigger events, so we'll set "Is Trigger" in the Box Collider component. We'll also deactivate the mesh renderer compoennt so that we don't see the bounding box when playing the game.
+
+Now we need to center the cube and scale it to cover everything the player would see. This is easiest to do by reenabling the cube's mesh renderer, checking the game view, and modifying the transform and scale until the cube covers everything.
+
+Now for the functionality of the boundary, we need to add a script. We'll use the function "OnTriggerExit" which is called whenever some other object ceases colliding with the object we are scripting. The Unity API's sample code for this function does exactly what we want, so we can just copy it:
+
+	 void OnTriggerExit(Collider other) {
+        Destroy(other.gameObject);
+    }
+
+Build and test, fire some shots and notice that when they leave the edge of the screen they disappear from the scene hierarchy. Great!
+
+
+HAZARDS
+
+We will create hazards for the player to shoot and avoid, in the form of asteroids flying down the screen. 
+
+First create an empty gameobject, name it "Asteroid" and reset it to origin. Then in Assets->Models, drag an asteroid model into the Asteroid gameobject. This will create a child gameobject representing the model, with its own transform, mesh and mesh renderer.
+
+For logic, we want this asteroid to be collidable. We need to add a RigidBody component to the Asteroid gameobject, and disable gravity. The asteroid is oblong and has a fairly complex mesh, so we'll use a capsule collider instead of a mesh. Scale the capsule collider to fit, I went with radius 0.5 and Height 1.7.
+
+Next we want to make the asteroid tumble through space at a random rotation speed. This will require a script component, so create one and name it "RandomRotator."
+
+In the script we'll need a public float "tumble" to let us tune our rotation speed from the Unity inspector. Then to achieve randomization, we'll use "Random.InsideUnitSphere" which gives us a random Vector3 representing a point within a sphere of radius 1, centered at origin. This is convenient for us because Vector3 is also the type of our Asteroid's rigidbody angular velocity.
+
+We want to set each asteroid's speed when the asteroid spawns, so we'll place our code inside the Start() function:
+
+	public float tumble;
+
+	void Start () {
+			rigidbody.angularVelocity = tumble * Random.insideUnitSphere;
+	}
+
+
+Testing this code, the asteroid looks great at first but eventually its rotation slows and stops. This is caused by the default "Angular Drag" value of the rigidbody component, which gradually slows any angular rotation. We don't want our asteroids to stop rotating, so change the drag value from 0.05 to 0.
+
+Next we'll let the player shoot the asteroid. Currently, both the player's shots and our asteroids are trigger colliders, so they will simply pass through eachother. We create another script for our Asteroid, "DestroyByContact".
+
+This script will be very similar to our previous DestroyByBoundary, but we 'll be using "OnTriggerEnter" isntead of "OnTriggerExit".
+
+	void OnTriggerEnter(Collider other){
+		Destroy (other.gameObject);
+		Destroy (gameObject);
+	}
+
+Now back in testing, there's a problem. As soon as we start the game, our asteroid disappears. Notice how our DestroyByContact code doesn't specify WHICH object it is colliding with... it simply destroys whenever any collision happens. And our bounding box has a collider covering the entire field, meaning it immediately destroys the asteroid (and itself) when the game starts. Notice that when you fire bolts, they don't disappear any more because the bounding box was also destroyed.
+
+If we couldn't guess the problem, we could log the Asteroid's collision to the Unity console by adding the following line to DestroyByCollision:
+
+	Debug.Log (other.name);
+
+So, now for the solution. We know want to prevent collision with Boundary, so back in our script we can check if the object we are colliding with is Boundary. We can do that by looking at the object's name or its tag, but checking by tag is good practice (it makes our code reusable if we add that same tag to more objects). So we'll go into the Unity inspector for Boundary, create and add a tag named "Boundary." Then we'll rewrite our DestroyByContact script as follows:
+
+	void OnTriggerEnter(Collider other){
+
+			if(other.tag == "Boundary"){
+				return;
+			}
+
+			Destroy (other.gameObject);
+			Destroy (gameObject);
+		}
+
+Compile and test, and now the asteroid should remain last until we shoot it. And because the script only checks boundary and destroys ANY other collision, it will also destroy our ship if we fly into the asteroid. This is fine, I suppose.
+
+EXPLOSIONS
+
+Right now, when we shoot an asteroid both the asteroid and the bolt simply disappear. We want to add a visual explosion to make things more interesting. We only want to create an explosion when a shot destroys something, so we'll need to start with no explosion in the scene hierarchy and instantiate one in our DestroyByContact script:
+
+	public GameObject explosion;
+
+	...
+
+	Instantiate (explosion, transform.position, transform.rotation);
+
+Back in the Unity inspector, we'll set "explosion" to the exlposion_asteroid prefab from Assets->VFX->Explosions. Then run the program, shoot the asteroid and watch as a cloned explosion is created.
+
+Now, if we fly our ship into the asteroid then we get the exact same effect, which is a bit underwhelming for something as important as the player ship. We want to use a different explosion for this case.
+
+In Assets->VFX->Explosions is another gameobject called explosion_player, and we'll start by creating a new public variable in DestroyByContact to store that gameobject. Call it "playerExplosion".
+
+Next we need to check if the collided object is the player, so we'll add a "Player" tag to the player's ship gameobject in the Unity inspector, and then check for that tag in the script:
+
+	if (other.tag == "Player") {
+		Instantiate (shipExplosion, other.transform.position, other.transform.rotation);
+	}
+
+Our asteroid is good for now, and we'll want to reuse it many times, so drag it from the scene hierarchy into Assets->Prefabs for later use.
+
+
+GAME CONTROLLER
+
+Right now we have a lot of disparate objects with their own logic, but no overall "game"  logic. We want to be able to start and end the game, decide when to spawn enemies, and so forth. We'll create a new GameObject and attach scripts to perform these functions. Create an empty GameObject and name it "GameController."
