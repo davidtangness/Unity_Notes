@@ -284,9 +284,150 @@ Next we need to check if the collided object is the player, so we'll add a "Play
 		Instantiate (shipExplosion, other.transform.position, other.transform.rotation);
 	}
 
-Our asteroid is good for now, and we'll want to reuse it many times, so drag it from the scene hierarchy into Assets->Prefabs for later use.
+
+Now to make the asteroid a bit trickier, we'll make it move down the screen. We can reuse the "Mover" script from player shots, attaching it to Asteroid as a component and tuning the Speed value.
+
+
+Our asteroid is ready now, and we'll want to reuse it many times, so drag it from the scene hierarchy into Assets->Prefabs for later use.
 
 
 GAME CONTROLLER
 
-Right now we have a lot of disparate objects with their own logic, but no overall "game"  logic. We want to be able to start and end the game, decide when to spawn enemies, and so forth. We'll create a new GameObject and attach scripts to perform these functions. Create an empty GameObject and name it "GameController."
+Right now we have a lot of disparate objects with their own logic, but no overall "game"  logic. We want to be able to start and end the game, decide when to spawn enemies, and so forth. We'll create a new GameObject and attach scripts to perform these functions. Create an empty GameObject, asign the premade tag "GameController," and then create a new script.
+
+ The main job of this script will be to spawn waves of hazards, so we'll create a new function called "SpawnWaves". We want this function to Instantiate hazard objects, and this requires three arguments: what object, what position and what rotation.
+
+THe objct will be our Asteroid, we can just create a public "hazard" variable ad assign our Asteroid prefab to it in the Unity inspector. 
+
+Position is trickier, we want to be able to determine the Asteroid's y-axis and z-axis positions to ensure the asteroid can collide with the player ship and that the asteroid spawns ahead of the player (out of view). But we want the x-axis to be random within the boundary of the game. With those goals in mind, the code is fairly easy:
+
+		public Vector3 spawnValues;
+
+		....
+
+		Vector3 spawnPosition = new Vector3 (Random.Range (-spawnValues.x, spawnValues.x), spawnValues.y, spawnValues.z);
+
+
+As for rotation... well we don't care very much. Our Asteroids already rotate randomly on their own, so it doesn't really matter if we also apply a rotation here. Instantiate demands that we pass in a Quaternion to set the rotation, so we'll simply use the default "Quaternion Identity" which applies no rotation. 
+
+	Quaternion spawnRotation = Quaternion.identity;
+
+So, the final script looks like this:
+
+	using UnityEngine;
+	using System.Collections;
+
+	public class GameController : MonoBehaviour {
+
+		public GameObject hazard;
+		public Vector3 spawnValues;
+
+		// Use this for initialization
+		void Start () {
+		
+			SpawnWaves();
+		}
+		
+		void SpawnWaves () {
+
+			Vector3 spawnPosition = new Vector3 (Random.Range (-spawnValues.x, spawnValues.x), spawnValues.y, spawnValues.z);
+			Quaternion spawnRotation = Quaternion.identity;
+
+			Instantiate (hazard, spawnPosition, spawnRotation);
+		
+		}
+
+	}
+
+Save the script and run our game, and there should be a single asteroid tumbling into view from the top edge of the screen. The asteroid can be shot, rammed, and it will despawn when it passes through the bottom of the screen.
+
+
+SPAWNING WAVES
+
+So we can spawn one Asteroid, but we want to spawn lots of them. We'll put our spawn code into a loop:
+
+	public int hazardCount;
+
+	...
+
+	for(int i = 0; i < hazardCount; i++){
+		Vector3 spawnPosition = new Vector3 (Random.Range (-spawnValues.x, spawnValues.x), spawnValues.y, spawnValues.z);
+		Quaternion spawnRotation = Quaternion.identity;
+		Instantiate (hazard, spawnPosition, spawnRotation);
+	}
+
+This lets us spawn many enemies at once, but this will still only give is one big wave at the start of the game. What we really want is a delay after each spawn.
+
+	public float spawnWait;
+
+	...
+
+	void SpawnWaves () {
+
+		for(int i = 0; i < hazardCount; i++){
+			Vector3 spawnPosition = new Vector3 (Random.Range (-spawnValues.x, spawnValues.x), spawnValues.y, spawnValues.z);
+			Quaternion spawnRotation = Quaternion.identity;
+			Instantiate (hazard, spawnPosition, spawnRotation);
+			WaitForSeconds(spawnWait);
+		}
+	}
+
+Now, if we ran this code we would simply pause our entire game for the duration of spawnWait. We need to turn SpawnWaves into a "co-routine" which allows the rest of our code to continue running while this function is paused. To turn SpawnWaves into a co-routine, we must make it return "IEnumerator", and WaitForSeconds must become "yield return new WaitForSeconds." When SpawnWaves is called, we must call it as "StartCoroutine (SpawnWaves ())". While we're at it, we'll add a small delay to the start of SpawnWaves as well, to give the player a bit of time to get ready when the game starts.
+
+Here's how the script looks:
+
+	using UnityEngine;
+	using System.Collections;
+
+	public class GameController : MonoBehaviour {
+
+		public GameObject hazard;
+		public Vector3 spawnValues;
+		public int hazardCount;
+		public float spawnWait;
+		public float startWait;
+
+		// Use this for initialization
+		void Start () {
+			StartCoroutine(SpawnWaves());
+		}
+		
+		IEnumerator SpawnWaves () {
+
+			yield return new WaitForSeconds(startWait);
+			for(int i = 0; i < hazardCount; i++){
+				Vector3 spawnPosition = new Vector3 (Random.Range (-spawnValues.x, spawnValues.x), spawnValues.y, spawnValues.z);
+				Quaternion spawnRotation = Quaternion.identity;
+				Instantiate (hazard, spawnPosition, spawnRotation);
+				yield return new WaitForSeconds(spawnWait);
+			}
+		}
+	}
+
+
+At this point, we can run the game with various numbers of hazards, have them spawn one-by-one, and shoot through them. It works nicely but eventually hazardCount runs out and there's nothing left to do. What we'll do is put our for-loop inside a "while" loop, so that we'll continuously spawn waves of hazards, with each wave containing hazardCount asteroids. We'll also add a delay between waves.
+
+
+
+Running our game and shooting several waves of asteroids, a problem becomes obvious in the hierarchy view: We never destroy the explosions which spawn every time we shoot an asteroid. We need to create a new script which despawns explosions (and perhaps other things) after a certain amount of time has passed. Here's the script, which I named DestroyByTime:
+
+	using UnityEngine;
+	using System.Collections;
+
+	public class DestroyByTime : MonoBehaviour {
+
+		public float lifeTime;
+
+		void Start(){
+			Destroy (gameObject, lifeTime);
+		}
+	}
+
+
+Return to Unity and navigate Assets->VFX->Explosions, select explosion_asteroid, add component -> script -> DestroyByTime. Then set the lifeTime value to some number of seconds. This would be useful functionality for all of our game's explosions, so we'll attach this script to the explosion_player and explosion_enemy prefabs as well.
+
+Run the game again, shoot some asteroids and notice that the Explosion objects now disappear from the hierarchy. Crash into an asteroid and notice that the player explosion disappears from the hierarchy as well.
+
+
+AUDIO
+
