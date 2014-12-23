@@ -431,3 +431,210 @@ Run the game again, shoot some asteroids and notice that the Explosion objects n
 
 AUDIO
 
+Unity has three main audio components: Audio Clips, Audio Sources and the Audio Listener. We'll focus on clips and sources.
+
+Audio clips hold audio data/sound files. 
+
+Audio sources play our clips in the scene.
+
+We have some audio clips already under Assets->Audio. We can preview these sounds in the Unity Inspector view, and chane some basic settings such as audio format or compression. For our simple 2D game, the only option we really care about is ensuring "3D sound" is NOT enabled. 
+
+To play our audio, we need to add an Audio Source component to one of our GameObjects, and then associate the Audio Source with a clip. We can do this very quickly by dragging a clip from the assets view onto a gameobject in the scene hierarchy. We can also drag audio clips onto prefabs which are themselves in the assets view.
+
+First, let's set up the sound effect for an exploding asteroid. Simply drag the explosion_asteroid clip onto the explosion_asteroid prefab.  In the inspector view, with explosion_asteroid selected, we can see that an Audio Source component has been added with a reference to the explosion_asteroid audio clip. Notice the "Play On Awake" checkbox, this will play the audio clip as soon as the associated gameobject is instantiated. Enable this, so that the explosion sound will play when the visual explosion appears.
+
+Repeat the above for the explosion_player audio clip and prefab effect.
+
+Now for the sound of the player shooting. The easy solution is to just repeat the above process, attaching the weapon_player clip to our custom Bolt VFX so that whenever a bolt spawns (ie, when we fire) the firing sound is played. However, the tutorial chooses to go a more complicated route using a script, and for instruction's sake I will follow along:
+
+Drag the weapon_player clip onto the Player gameobject, then deselect "Play On Awake" so that the clip does not play when the player spawns. In the PlayerController script, add "audio.Play ()" to the result of the firing if-statement. Note that if multiple audio sources are attached to a single gameobject, only the first source will be played.
+
+	if (Input.GetButton ("Fire1") && Time.time > nextFire) {
+		nextFire = Time.time + fireRate;
+		Instantiate (shot, shotSpawn.position, shotSpawn.rotation);
+		audio.Play();
+	}	
+
+
+Next is Background Music. We'll attach that audio to the GameController object and enable "Play On Awake" and "Loop," so that the audio plays immediately and continuously.
+
+Upon testing, some of the audio sounds unbalanced. The weapons and background music are quote loud relative to the explosions, so in the Unity Inspector, we'll redice the "Volume" setting for the background music and player shots.
+
+
+COUNTING POINTS AND DISPLAYING THE SCORE
+
+As we saw in the Roll-a-ball project, this tutorial series is a bit out of date. The GuiText gameobject used in the tutorial has been deprecated, so I'll be creating my own solution:
+
+Create a "Canvas" gameobject in the scene hierarchy and reset its position to origin, and then create a child "Text" gameobject. Adjust the Text's transform to put it in the top-left corner of the player view (my settings were top-left anchor, position 60/-60/0). Set the default text to "Score:". The text's default gray colour is difficult to see against the game's dark background, so change the text colour to something bright.
+
+Now to hookup our game logic to the score text. In the GameController script we'll add a reference to our Text object, a variable to store our current score, and functions to modify the current store and update the displayed score. Then we'll modify the Start function to initialize our score to 0 when the game starts.
+
+	public UnityEngine.UI.Text scoreText;
+	public int score;
+
+	...
+
+	void Start () {
+		score = 0;
+		UpdateScore ();
+		StartCoroutine(SpawnWaves());
+	}
+
+	...
+
+	public void AddScore(int newScoreValue){
+			score += newScoreValue;
+			UpdateScore();
+	}
+
+	void UpdateScore(){
+		scoreText.text = "Score: " + score;
+	}
+
+Next we need to call AddScore with an appropriate value whenever the player does something worthy of points... shooting an asteroid for example. Open up the DestroyByContact script.
+
+We'll need a variable to reference our GameController instance, and then we'll need to call AddScore in that GameController.
+
+	public GameController gameController;
+	public int scoreValue;
+
+	...
+
+	void OnTriggerEnter(Collider other){
+
+		if(other.tag == "Boundary"){
+			return;
+		}
+
+		Instantiate (explosion, transform.position, transform.rotation);
+
+		if (other.tag == "Player") {
+			Instantiate (shipExplosion, other.transform.position, other.transform.rotation);
+		}
+		gameController.AddScore (scoreValue);
+		Destroy (other.gameObject);
+		Destroy (gameObject);
+	}
+
+
+Now close the script, select the Asteroid prefab in Assets->Prefabs, and try to drag our instance of GameController into the script slot. It doesn't work, because our Asteroid is just a prefab. This asteroid could be reused in any scene, so it doesn't make sense to associate it with a single instance of GameController from a single scene. We'll have to wait until an instance of Asteroid is created, and then find an instance of GameController to reference. Every instance of Asteroid will have to do this, all at runtime, and to do this we need a script. Reopen DestroyByContact:
+
+
+	private GameController gameController;
+
+	...
+
+	void Start(){
+		GameObject gameControllerObject = GameObject.FindWithTag ("GameController");
+		if (gameControllerObject != null) {
+			gameController = gameControllerObject.GetComponent <GameController> ();
+		}
+		if (gameController == null){
+			Debug.Log("Cannot find 'GameController' script");
+		}
+	}
+
+
+The above code is mostly self-explanatory. Note the syntax <GameController>, this is specifying the type "GameController" meaning it will only accept instances of the GameController class (even if someone puts the GameController tag on another object). Also note that we changed the gameController variable from public to private. Since we cannot set gameController from the Unity inspector, there was no benefit to having the variable public.
+
+Two last bits of cleanup: Open the GameController script and set "Score" to private, since we don't need to modify it from the Unity inspector. Then check the Asteroid prefab and set its score value to some positive integer (I used 10).
+
+Save and test. The score should now increment every time an asteroid is destroyed, whether by a shot or a collision with your ship.
+
+
+ENDING THE GAME
+
+At this point our game is playable but it runs forever. We need to end the game when the player is destroyed, and give the player an option to restart.
+
+In the Canvas gameobject, create two new text gameobjects: GameOver and RestartText. Adjust their transforms and colours to your liking, the tutorial puts Game Over in the center and Restart in the upper right corner.
+
+Open the GameController script and add references, states and initialization for these texts:
+
+	public UnityEngine.UI.Text gameOverText;
+	public UnityEngine.UI.Text restartText;
+
+	private bool gameOver;
+	private bool restart;
+
+	...
+
+	void Start () {
+		gameOver = false;
+		restart = false;
+		restartText.text = "";
+		gameOverText.text = "";
+		score = 0;
+		UpdateScore ();
+		StartCoroutine(SpawnWaves());
+	}
+
+Then we need to make a function which can be called to end our game:
+
+	public void GameOver(){
+		gameOverText.text = "Game Over";
+		gameOver = true;
+	}
+
+And modify the SpawnWaves loop to respect the state of gameOver:
+
+	while (true) {
+			for (int i = 0; i < hazardCount; i++) {
+				Vector3 spawnPosition = new Vector3 (Random.Range (-spawnValues.x, spawnValues.x), spawnValues.y, spawnValues.z);
+				Quaternion spawnRotation = Quaternion.identity;
+				Instantiate (hazard, spawnPosition, spawnRotation);
+				yield return new WaitForSeconds (spawnWait);
+			}
+			yield return new WaitForSeconds(waveWait);
+
+			if (gameOver){
+				restartText.text = "Press 'R' for Restart";
+				restart = true;
+				break;
+			}
+		}
+
+Now we need to actually check for the "R" keypress and cause a restart. 
+
+	void Update(){
+		if (restart){
+			if(Input.GetKeyDown (KeyCode.R)){
+				Application.LoadLevel(Application.loadedLevel);
+			}
+		}
+	}
+
+In the code fragment above, Application.LoadLevel will load whichever scene we specify. We use Application.loadedLevel to specify the current scene.
+
+Finally, we need to call GameOver() when the player ship is destroyed. Our asteroids already detect this, so that's where we'll put our call. Fortunately we already did the hard work of connecting each Asteroid instance to our GameController instance. Open DestroyByContact and call gameController.GameOver() when we destroy the player:
+
+	void OnTriggerEnter(Collider other){
+
+		if(other.tag == "Boundary"){
+			return;
+		}
+
+		Instantiate (explosion, transform.position, transform.rotation);
+
+		if (other.tag == "Player") {
+			Instantiate (shipExplosion, other.transform.position, other.transform.rotation);
+			gameController.GameOver();
+		}
+		gameController.AddScore (scoreValue);
+		Destroy (other.gameObject);
+		Destroy (gameObject);
+	}
+
+Now save, run the game, and crash into an asteroid. The "Game Over" text should immediately appear, and once the current asteroid wave ends you should see the "Restart" text as well. At this point, pressing R should restart the game.
+
+Last, we'll make our lables a bit prettier. Select the Score and RestartText gameobjects in the scene hierarchy and set their Font Size to 20. Select the GameOver gameobject and set its Font Size to 25.
+
+Test again, and our game is complete.
+
+
+BUILDING THE GAME
+
+This will be very similar to Roll-a-ball. Open File->Build Settings and select "Web Player", then press "Add Current" to add our current scene to the build, then press "Build."
+
+Select a folder to place the build in, and continue. When the build is finished, check this folder and you should find two files: an HTML file which you can open to run your game, and a .Unity3D file which contains your game's data. The HTML file can be modified to suit your purposes, but by default both the HTML file and .Unity3D file must be in the same folder in order to run.
+
+Done!
