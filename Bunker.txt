@@ -1,0 +1,51 @@
+WHAT IS BUNKER?
+
+---------------
+
+BACKGROUND
+
+Bunker is a game where you play paintball.
+
+Paintball games have been made before, as fairly conventional FPS's, but I feel like they miss the point. Paintball is a game about odds, not twitch skill.
+
+In general, you win an FPS by twitching faster and more accurately than your opponent so that you hit them before they hit you. Guns are accurate, so you know that if your twitch is better then all else WILL be equal and you will win.
+
+In my experience, this isn't how paintball really works. Paintball guns are relatively easy to aim, being quite small and light, but they have relatively poor accuracy. This can be countered by increasing rate-of-fire, but then paintball becomes boring (and most paintball competitions have rules restricting ROF for this exact reason). 
+
+I think paintball is a game of odds, not a game of twitch.
+
+When I pop out of cover, there is a delay while I locate and aim at my opponent and they locate and aim at me. Then there is a chance I will actually hit them, and a chance they will actually hit me. As I shoot and watch where my paintballs land I can zero-in my aim to some extent, improving my chance to hit. My opponent does the same. 
+
+So how do I win? By choosing cover which gives me advantageous angles where I'm more likely to hit my opponent than get hit. And by sneaking between cover while monitoring my opponent's position so that when I pop out to shoot, I already know where to aim wheras they have to spend a moment locating me. These are the systems which I want to create in Bunker.
+
+There are plenty of smaller/situational tactics (suppressive fire, team play, end-runs etc) which I would like to create as well, but my resources are limited so these may be left out.
+
+----------
+
+OVERVIEW
+
+Bunker has a single player character going up against one or several opponents on a paintball field which lots of cover (bunkers). The camera will be above and behind the player, but the field should be obscured when out of the player character's view (RTS-style "fog-of-war").
+
+The player should have some awareness of what is happening outside of their LOS. When the player breaks LOS with all enemies, enemies will focus their aim on the player's last known position. **This system can be expanded quite a bit once I have the basic mechancis functioning.**
+
+
+The player can shoot at, and be shot by, any opponent which they have line-of-sight to. Shooting is automated, perhaps represented by 3D cones in the game world, so that a character which is more exposed will have a higher chance of being hit. As one character fires continuously at another, their aim improves to some limit. Their aim resets when they stop firing (ie, LOS is broken).
+
+Characters have three active states:
+
+They can be "safe," meaning they are fully behind a piece of cover with no LOS beyond the cover, and opponents beyond cover have no LOS to them. 
+
+They can be "popped," meaning they are leaning around the edge of cover and moderately difficult to hit, (perhaps 40% per second of fire). If a character pops left, they will be able to see everything to their left and directly ahead, plus a few degrees to the right.
+
+Lastly, they can be "exposed," meaning they are entirely out of cover and have complete visibility, while being very easy to hit.
+
+The fourth state is "out". When a character gets hit once, they leave the game. When all characters on one side of the game are out, the game ends.
+
+Movement is position-to-position, with each piece of cover defining several positions (ie, top left, top right, top center, bottom left, bottom right, bottom center). Within most positionsa character can be safe or popped. A character is usually safe while moving between positions on the same cover, but exposed when moving between separate pieces of cover.
+
+
+
+
+
+
+
