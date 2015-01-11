@@ -1,11 +1,138 @@
-Thus far I've only attemped 3D development in Unity. Although Space Shooter is played from a 2D perspective, the game is still built from 3D models. This introduces two problems for my game "Bunker": First, I don't have the skills to create a good-looking 3D model, and I don't really have the time to learn. Second, I would like Bunker to work on mobile platforms, and 3D brings a significant performance hit. So, it's about time I tried some pure 2D development.
+Thus far I've only attempted 3D development in Unity. Although Space Shooter is played from a 2D perspective, the game is still built from 3D models. This introduces two problems for my game "Bunker": First, I don't have the skills to create a good-looking 3D model, and I don't really have the time to learn. Second, I would like Bunker to work on mobile platforms, and 3D brings a significant performance hit. So, it's about time I tried some pure 2D development.
 
-I'll start by working through Unity's Beginner 2D tutorial. This tutorial is a bit different from Roll a Ball or Space Shooter, because it simply explains concepts rather than create an example game.
+I'll start by working through Unity's Beginner 2D tutorial. This tutorial is a bit different from Roll a Ball or Space Shooter, because it simply explains concepts rather than create an example game. 
 
 --------------
 
 2D MODE
 
-Unity projects can be flipped between "3D mode" and "2D mode" in the Project Settings->Editor Settings menu. When in 2D mode, the main camera will automatially be set to orthographic perspective, and textures will automatically be imported as Sprites.
+Unity projects can be flipped between "3D mode" and "2D mode" in the Project Settings->Editor Settings menu. When in 2D mode, the main camera will automatically be set to orthographic perspective, and textures will automatically be imported as Sprites.
 
-Unity's "Scene View" can also be flipped between 2D and 3D mode, but this does not change the underlying game.
+Unity's "Scene View" can also be flipped between 2D and 3D mode, but this does not change the underlying game. At the end of the day, a 2D objects in Unity are just flat planes in 3D space, so we can freely look at them in 2D or 3D.
+
+(So when I create Bunker, I’ll create it in 2D mode and start in 2D scene view.)
+
+—————
+
+SPRITES
+
+Unity implements sprites as a specific type of texture.
+
+Sprites can be treated as “Single” or “Multiple”. Single means that the underlying image file contains a single picture. Multiple means that the file contains multiple picture in a single image, which will need to be subdivided before further use.
+
+“Packing Tag” allows the sprite to be unpacked into a specified Sprite Atlas. It’s a way of keeping your assets organized.
+
+“Pixels to Units” determines how many pixels of the sprite will correspond to a single Unity Unit of world space. Basically it’s resolution and scale rolled into one.
+
+“Pivot” sets the point on the sprite around which rotation will occur. Note that the pivot point cannot be set for Multiple-type sprites.
+
+“Filter Mode” changes the quality of the image when it is stretched.
+
+(“Aniso Level” changes the quality of a texture when it’s viewed at an angle, but this doesn’t really apply to 2D sprites. So that’s what anisotropic filtering means.)
+
+Max size, format, and the platform buttons allow you to set the maximum file size and compression per platform, to support multi-platform development.
+
+Once a texture has been imported, it will appear in the assets view as a single sprint (in single mode) or a group of several sprites (in multiple mode).
+
+———
+
+THE SPRITE EDITOR
+
+Unity’s sprite editor is used to take images containing multiple sprites and slice it into individual sprites. 
+
+In the editor your image is displayed, and you click-and-drag to create rectangles which define each sprite.
+
+Within the rectangle acircle will indicate the pivot point for that sprite.
+
+Click on a box to open that sprite's details pane, which lets you set a name, X and Y position, width and height, and a custom pivot. You can also use "trim" to reduce the box to the minimum possible containing size (though this requires an image with background alpha).
+
+The "Slice" pane lets you tell Unity to automatically slice the image into sprites. You can set a minimum size per sprite, a default pivot point and whether or not it will overwrite any slices you've already made. You can also set the slice to be "automatic" (unique slice size for every sprite) or "grid" (same sprite size for every sprite, and the sprites are tiled down the file.)
+
+-----
+
+THE SPRITE RENDERER
+
+The sprite renderer is a component which defines how a sprite will look. 
+
+"Color" lets you set a tint or alpha-channel fade on the sprite. 
+
+"Material" determines which material Unity will use for that sprite, which determines how lighting affects the sprite.
+
+"Sorting Layer" and "Order In" layer determine the order in which sprites are drawn. By default every sprite is placed in a single sorting layer, and within that layer each sprite has an arbitrary number starting from 0.
+
+------
+
+SORTING LAYERS
+
+Sorting essentially determines which sprites appear at the "front" and "back" of the image. Sprites rendered first will be at the back, and sprites rendered later will be in front of them.
+
+Sprites are organized into layers, those layers can be renderered in order, and within a layer each sprite can be rendered in order. 
+
+
+(In Bunker, I'll want to set the ground as the backmost layer, players, bunkers and projectiles as a middle layer, and my UI as the top layer.)
+
+-----
+
+2D PHYSICS
+
+Unity comes with a 2D physics engine which is outwardly very similar to the 3D physics engine. For our purposes, the main difference is that the X, Y and Z axes have different meanings. Objects can only move on the X and Y axes, and can only rotate around the Z-axis. All physical interations effectively happen at Z-axis position 0.
+
+We apply physics to a 2D object by attaching a "Rigidbody 2D" component. This is mostly used to make objects movable.
+
+We enable a 2D object to participate in collisions or trigger events by attaching a "Collider 2D" component. We can change the way the object reacts to collisions by setting its "Physics Material" (for example, "bouncy").
+
+We can add a "Joint 2D" component to enable a 2D object to be anchored to another object in the scene, and react physically to that object (like a spring or a chain).
+
+(In Bunker, I'll need to apply Rigidbody components to characters and projectiles, and Collider components to the characters, projectiles, bunkers and walls.)
+
+-----
+
+(Skipping RIGIDBODY 2D and COLLIDER 2D, as they seem extremely similar to their 3D counterparts which I've studied previously)
+------
+
+HINGE JOINT 2D
+
+A hinge joint component allows a sprite to rotate around a specific point in response to physics. 
+
+The "connected rigidbody" defines whether your hinge should connect the base object to another object (by choosing that object's rigidbody) or the gameworld (by leaving it blank). "Anchor" sets the position on your object where the hinge will be, and "connected anchor" sets the position on the other object (or the world) where the other end of the hinge will attach to. Note that these positions don't have to be directly on the sprite.
+
+"Motor" lets you apply some amount of torque and a target speed which the hinge will attempt to rotate at. Torque will be increased until either the target speed or maximum torque is reached.
+
+"Angle Limits" let you define how far in either direction the hinge is allowed to rotate.
+
+-----
+
+SPRING JOINT 2D
+
+Yo, it's a spring.
+
+
+-----
+
+Distance Joint 2D
+
+Forces two objects to stay at a certain distance from eachother. It's not a spring, the objects try to stay at their exact distance at all times. If placed in a situation where the objects are not at the correct distance, Unity will apply forces until the objects reach their desired distance. 
+
+-----
+
+2D Character Controllers
+
+To make a 2D character animate, we first attach an "Animator" component. 
+
+Then we need to create an Animator Controller in our assets, and drag the Animator Controller into the appropriate slot in our Animator component.
+
+Open up the Animator Controller, and you'll see a state diagram where you can decide which animations will be played in whichever state your character is in. 
+
+Now to create animations, we need to open Unity's Animation window. Select the object you want the animations to apply to (ie, the player character), athen in the Animation window click "Create new clip."
+
+We'll be prompted ot create a new file, and this animation will be automatically added to the animator controller. Now drag some Sprite assets into the Animation window, and drop them onto the timeline. Note that we can keep these sprites nicely organized by using one "Multiple"-type file.
+
+Warning, if you're using a multiple-sprite file and the dimensions of that file exceed the max size set for that file in the importer, Unity will compress the file and this can make your animations look really bad. It's bad for single files because the compression errors are relatively large compared to the size of each individual sprite within that file.
+
+
+So we can repeat the above process a few times and come up with several animations, but now we need to be able to determine which animation we want to use at any given time. We do this in the Animator Controller. We can create a "Parameter" within the animator controller, and then create a transition line from one animation to another. In the Inspector for that transition line, we can set a condition involving the Parameter created earlier. For example, transition if "speed" parameter is "less than" some "value".
+
+(For Bunker, I'll basically be using the entire process above to handle character movement. I might apply an animation to moving projectiles as well, will see how it looks without one.)
+
+Parameter values still need to be set before they're actually useful. We must create a Script to handle this. To set a Parameter named "Speed" to float value someValue in an animator attached to the same gameobject as this script, use "anim.SetFloat("Speed", someValue)".
+
