@@ -39,9 +39,25 @@ They can be "popped," meaning they are leaning around the edge of cover and mode
 
 Lastly, they can be "exposed," meaning they are entirely out of cover and have complete visibility, while being very easy to hit.
 
-The fourth state is "out". When a character gets hit once, they leave the game. When all characters on one side of the game are out, the game ends.
+The fourth state is "out". When a character is shot, they leave the game. When all characters on one side of the game are out, the game ends.
 
-Movement is position-to-position, with each piece of cover defining several positions (ie, top left, top right, top center, bottom left, bottom right, bottom center). Within most positionsa character can be safe or popped. A character is usually safe while moving between positions on the same cover, but exposed when moving between separate pieces of cover.
+Movement is point-to-point, with each piece of cover defining several positions (ie, front left, front right, front center, back left, back right, back center). When a character enters cover they start in the safe in the safe center position, and can lean into the other positions in order to shoot and be shot at.
+
+
+--------
+
+SETTING UP THE PLAY AREA (GROUND, LIGHTS)
+
+The game should be played on a large flat surface, longest along the z-axis. I'll create a Planeat origin then adjust its Scale transform to make it a bit wider and much longer.
+
+For lighting, I want to emlate the "spotlight" look of real paintball fields. A row of spotlights along each wall, at a low angle with some space between each pool of light for dramatic shadows. For my current field I would want about 12 spotlight lights, six per side, but this causes a problem: Only the first two spotlights actually create clear pools of light, the rest are lighting the entire scene. A bit of research reveals this is is a quality/performance limitation which I can adjust in Unity's Project Settings. The spotlights I want are "pixel lights," and my game is limited to a max of 2 pixel lights currently. The remaining lights become less-intensive "vertext lights," which don't have the look that I want. For now, I'll just increase the Pixel Light limit to 12 to get the look I want, and hopefully in testing the performance will hold up.
+
+However, when I enable shadows for the spotlights, I recieve a warning message: Realtime shadows for point and spot lights require Unity Pro. Well, great, back to directional lights. I create two directional lights, enable shadows, and notice only one has a shadow. A bit of research reveals that I need to change the "Rendering Path" for this project. The current rendering path is "Forward," and only supports realtime shadows for a single directional light. To get around this I need to switch to the more intensive "Deferred Lighting" rendering path... which requires Unity Pro. Great, one directional light it is!
+
+
+
+
+
 
 
 

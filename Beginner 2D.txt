@@ -1,0 +1,11 @@
+Thus far I've only attemped 3D development in Unity. Although Space Shooter is played from a 2D perspective, the game is still built from 3D models. This introduces two problems for my game "Bunker": First, I don't have the skills to create a good-looking 3D model, and I don't really have the time to learn. Second, I would like Bunker to work on mobile platforms, and 3D brings a significant performance hit. So, it's about time I tried some pure 2D development.
+
+I'll start by working through Unity's Beginner 2D tutorial. This tutorial is a bit different from Roll a Ball or Space Shooter, because it simply explains concepts rather than create an example game.
+
+--------------
+
+2D MODE
+
+Unity projects can be flipped between "3D mode" and "2D mode" in the Project Settings->Editor Settings menu. When in 2D mode, the main camera will automatially be set to orthographic perspective, and textures will automatically be imported as Sprites.
+
+Unity's "Scene View" can also be flipped between 2D and 3D mode, but this does not change the underlying game.
